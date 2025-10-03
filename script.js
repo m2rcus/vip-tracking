@@ -194,7 +194,7 @@ function saveSecureData() {
 }
 
 // Simple password authentication with ban system
-function authenticateUser(password) {
+async function authenticateUser(password) {
     // Check if device is already banned
     if (isDeviceBanned() || isBanned) {
         showBanMessage();
@@ -218,6 +218,7 @@ function authenticateUser(password) {
             timestamp: Date.now(),
             sessionId: Math.random().toString(36).substring(2, 15)
         }));
+        console.log('Authentication successful!');
         return true;
     } else {
         // Increment failed attempts
@@ -225,12 +226,14 @@ function authenticateUser(password) {
         
         // Check if max attempts reached
         if (failedAttempts >= CONFIG.maxFailedAttempts) {
+            console.log('Max failed attempts reached, banning device');
             banDevice();
             return false;
         }
         
+        console.log(`Authentication failed. Attempt ${failedAttempts}/${CONFIG.maxFailedAttempts}`);
         // Add delay to prevent brute force
-        setTimeout(() => {}, 2000);
+        await new Promise(resolve => setTimeout(resolve, 2000));
         return false;
     }
 }

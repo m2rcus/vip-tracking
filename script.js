@@ -204,6 +204,12 @@ function authenticateUser(password) {
     // Get password from environment variable (injected by Render)
     const correctPassword = window.SYSTEM_PASSWORD || CONFIG.systemPassword;
     
+    // Debug logging
+    console.log('Debug - window.SYSTEM_PASSWORD:', window.SYSTEM_PASSWORD);
+    console.log('Debug - CONFIG.systemPassword:', CONFIG.systemPassword);
+    console.log('Debug - correctPassword:', correctPassword);
+    console.log('Debug - input password:', password);
+    
     if (password === correctPassword) {
         // Reset failed attempts on successful login
         failedAttempts = 0;

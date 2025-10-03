@@ -34,6 +34,18 @@ app.get('/', (req, res) => {
     }
 });
 
+// Debug endpoint to check environment variable
+app.get('/debug', (req, res) => {
+    const systemPassword = process.env.SYSTEM_PASSWORD || 'MonkeyTilt2024!';
+    res.json({
+        hasPassword: !!process.env.SYSTEM_PASSWORD,
+        passwordLength: systemPassword.length,
+        passwordFirst5: systemPassword.substring(0, 5),
+        nodeEnv: process.env.NODE_ENV
+    });
+});
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    console.log(`SYSTEM_PASSWORD (first 5 chars): ${(process.env.SYSTEM_PASSWORD || 'MonkeyTilt2024!').substring(0, 5)}*****`);
 });

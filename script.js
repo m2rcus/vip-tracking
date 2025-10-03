@@ -10,7 +10,7 @@ let isBanned = false;
 const CONFIG = {
     sessionTimeout: 30 * 60 * 1000, // 30 minutes
     encryptionKey: 'MonkeyTiltVIP2024SecretKey!',
-    maxFailedAttempts: 3,
+    maxFailedAttempts: 6,
     // Password will be set via environment variable in Render
     systemPassword: 'MonkeyTilt2024!' // This will be overridden by Render env var
 };

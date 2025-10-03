@@ -41,8 +41,44 @@ app.get('/debug', (req, res) => {
         hasPassword: !!process.env.SYSTEM_PASSWORD,
         passwordLength: systemPassword.length,
         passwordFirst5: systemPassword.substring(0, 5),
-        nodeEnv: process.env.NODE_ENV
+        nodeEnv: process.env.NODE_ENV,
+        maxFailedAttempts: 6
     });
+});
+
+// Reset ban endpoint (for testing)
+app.get('/reset-ban', (req, res) => {
+    res.send(`
+        <html>
+            <head><title>Reset Ban</title></head>
+            <body>
+                <h1>Ban Reset</h1>
+                <p>Click the button below to reset your ban status:</p>
+                <button onclick="resetBan()">Reset Ban</button>
+                <script>
+                    function resetBan() {
+                        // Clear all ban data
+                        localStorage.removeItem('vipBanData');
+                        sessionStorage.removeItem('vipBanData');
+                        localStorage.removeItem('vipFailedAttempts');
+                        sessionStorage.removeItem('vipFailedAttempts');
+                        
+                        // Clear IndexedDB ban data
+                        if ('indexedDB' in window) {
+                            const request = indexedDB.deleteDatabase('vipBanDB');
+                            request.onsuccess = () => {
+                                alert('Ban reset successfully! You can now try logging in again.');
+                                window.location.href = '/';
+                            };
+                        } else {
+                            alert('Ban reset successfully! You can now try logging in again.');
+                            window.location.href = '/';
+                        }
+                    }
+                </script>
+            </body>
+        </html>
+    `);
 });
 
 app.listen(PORT, () => {

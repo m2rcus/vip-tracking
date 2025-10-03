@@ -1,7 +1,7 @@
 services:
   - type: web
     name: vip-tracking-system
-    env: static
+    env: node
     buildCommand: npm install
     startCommand: npm start
     plan: free

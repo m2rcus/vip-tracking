@@ -1,0 +1,16 @@
+{
+  "name": "vip-tracking-system",
+  "version": "1.0.0",
+  "description": "Lead & Player Management System for VIP tracking",
+  "main": "index.html",
+  "scripts": {
+    "start": "npx live-server --port=$PORT --host=0.0.0.0 --entry-file=index.html",
+    "dev": "npx live-server --port=3000 --entry-file=index.html"
+  },
+  "keywords": ["vip", "tracking", "leads", "players", "gambling"],
+  "author": "VIP Team",
+  "license": "MIT",
+  "devDependencies": {
+    "live-server": "^1.2.2"
+  }
+}

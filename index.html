@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lead & Player Management System</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <h1><i class="fas fa-dice"></i> MONKEY TILT</h1>
+                <span class="tagline">VIP Management System</span>
+            </div>
+            <p>Track leads, manage players, and generate comprehensive reports</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs">
+            <button class="tab-btn active" data-tab="leads">
+                <i class="fas fa-users"></i> Leads
+            </button>
+            <button class="tab-btn" data-tab="players">
+                <i class="fas fa-crown"></i> Current Players
+            </button>
+            <button class="tab-btn" data-tab="reports">
+                <i class="fas fa-chart-bar"></i> Reports
+            </button>
+        </nav>
+
+        <div class="main-content">
+            <!-- Leads Tab -->
+            <div id="leads-tab" class="tab-content active">
+                <div class="tab-layout">
+                    <!-- Add Lead Form -->
+                    <section class="form-section">
+                        <h2><i class="fas fa-user-plus"></i> Add New Lead</h2>
+                        <form id="leadForm" class="data-form">
+                            <div class="form-group">
+                                <label for="leadName">Lead Name *</label>
+                                <input type="text" id="leadName" name="leadName" required placeholder="Enter lead name">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leadEmail">Email</label>
+                                <input type="email" id="leadEmail" name="leadEmail" placeholder="Optional email">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leadPhone">Phone</label>
+                                <input type="tel" id="leadPhone" name="leadPhone" placeholder="Optional phone">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leadSource">Lead Source *</label>
+                                <select id="leadSource" name="leadSource" required>
+                                    <option value="">Select source</option>
+                                    <option value="social_media">Social Media</option>
+                                    <option value="referral">Referral</option>
+                                    <option value="website">Website</option>
+                                    <option value="advertisement">Advertisement</option>
+                                    <option value="telegram">Telegram</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactMethod">How They Reached Out *</label>
+                                <select id="contactMethod" name="contactMethod" required>
+                                    <option value="">Select method</option>
+                                    <option value="telegram">Telegram</option>
+                                    <option value="email">Email</option>
+                                    <option value="phone">Phone</option>
+                                    <option value="website_form">Website Form</option>
+                                    <option value="social_dm">Social Media DM</option>
+                                    <option value="live_chat">Live Chat</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="contactDate">Contact Date *</label>
+                                <input type="date" id="contactDate" name="contactDate" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="telegramUsername">Telegram Username</label>
+                                <input type="text" id="telegramUsername" name="telegramUsername" placeholder="@username or just username">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="gamblingRanking">Ranking on Other Gambling Sites</label>
+                                <select id="gamblingRanking" name="gamblingRanking">
+                                    <option value="">Select ranking</option>
+                                    <option value="bronze">Bronze</option>
+                                    <option value="silver">Silver</option>
+                                    <option value="gold">Gold</option>
+                                    <option value="platinum">Platinum</option>
+                                    <option value="diamond">Diamond</option>
+                                    <option value="vip">VIP</option>
+                                    <option value="high_roller">High Roller</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leadPersonality">Personality & Interests</label>
+                                <textarea id="leadPersonality" name="leadPersonality" rows="2" placeholder="Favorite sports, athletes, hobbies, interests, etc..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leadFavoriteGames">Favorite Games</label>
+                                <textarea id="leadFavoriteGames" name="leadFavoriteGames" rows="2" placeholder="What games do they like? Sports betting, slots, poker, etc..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leadNotes">General Notes</label>
+                                <textarea id="leadNotes" name="leadNotes" rows="2" placeholder="Other important notes..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="leadStatus">Status</label>
+                                <select id="leadStatus" name="leadStatus">
+                                    <option value="new">New</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="qualified">Qualified</option>
+                                    <option value="converted">Converted to Player</option>
+                                    <option value="lost">Lost</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add Lead
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Leads List -->
+                    <section class="list-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-list"></i> Leads List</h2>
+                            <div class="controls">
+                                <button id="exportLeadsBtn" class="btn btn-secondary">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button id="clearLeadsBtn" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="filters">
+                            <input type="text" id="searchLeadsInput" placeholder="Search leads..." class="search-input">
+                            <select id="statusFilter" class="filter-select">
+                                <option value="">All Statuses</option>
+                                <option value="new">New</option>
+                                <option value="contacted">Contacted</option>
+                                <option value="qualified">Qualified</option>
+                                <option value="converted">Converted</option>
+                                <option value="lost">Lost</option>
+                            </select>
+                            <select id="sourceFilter" class="filter-select">
+                                <option value="">All Sources</option>
+                                <option value="social_media">Social Media</option>
+                                <option value="referral">Referral</option>
+                                <option value="website">Website</option>
+                                <option value="advertisement">Advertisement</option>
+                                <option value="telegram">Telegram</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        
+                        <div id="leadsList" class="data-list">
+                            <!-- Lead entries will be dynamically added here -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Players Tab -->
+            <div id="players-tab" class="tab-content">
+                <div class="tab-layout">
+                    <!-- Add Player Form -->
+                    <section class="form-section">
+                        <h2><i class="fas fa-user-crown"></i> Add New Player</h2>
+                        <form id="playerForm" class="data-form">
+                            <div class="form-group">
+                                <label for="playerName">Player Name *</label>
+                                <input type="text" id="playerName" name="playerName" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerEmail">Email</label>
+                                <input type="email" id="playerEmail" name="playerEmail">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerPhone">Phone</label>
+                                <input type="tel" id="playerPhone" name="playerPhone">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerId">Player ID *</label>
+                                <input type="text" id="playerId" name="playerId" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="registrationDate">Registration Date *</label>
+                                <input type="date" id="registrationDate" name="registrationDate" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerTier">Player Tier</label>
+                                <select id="playerTier" name="playerTier">
+                                    <option value="bronze">Bronze</option>
+                                    <option value="silver">Silver</option>
+                                    <option value="gold">Gold</option>
+                                    <option value="platinum">Platinum</option>
+                                    <option value="diamond">Diamond</option>
+                                    <option value="vip">VIP</option>
+                                    <option value="high_roller">High Roller</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="totalDeposits">Total Deposits ($)</label>
+                                <input type="number" id="totalDeposits" name="totalDeposits" step="0.01" min="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="totalWithdrawals">Total Withdrawals ($)</label>
+                                <input type="number" id="totalWithdrawals" name="totalWithdrawals" step="0.01" min="0">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="lastActivity">Last Activity Date</label>
+                                <input type="date" id="lastActivity" name="lastActivity">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="telegramUsername">Telegram Username</label>
+                                <input type="text" id="telegramUsername" name="telegramUsername" placeholder="@username">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerPersonality">Personality & Interests</label>
+                                <textarea id="playerPersonality" name="playerPersonality" rows="3" placeholder="Favorite sports, athletes, hobbies, interests, etc..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerFavoriteGames">Favorite Games</label>
+                                <textarea id="playerFavoriteGames" name="playerFavoriteGames" rows="3" placeholder="What games do they play? Sports betting, slots, poker, etc..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerNotes">Important Information</label>
+                                <textarea id="playerNotes" name="playerNotes" rows="3" placeholder="Other important player information..."></textarea>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="playerStatus">Status</label>
+                                <select id="playerStatus" name="playerStatus">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                    <option value="suspended">Suspended</option>
+                                    <option value="vip">VIP</option>
+                                </select>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Add Player
+                            </button>
+                        </form>
+                    </section>
+
+                    <!-- Players List -->
+                    <section class="list-section">
+                        <div class="section-header">
+                            <h2><i class="fas fa-list"></i> Players List</h2>
+                            <div class="controls">
+                                <button id="exportPlayersBtn" class="btn btn-secondary">
+                                    <i class="fas fa-download"></i> Export CSV
+                                </button>
+                                <button id="clearPlayersBtn" class="btn btn-danger">
+                                    <i class="fas fa-trash"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="filters">
+                            <input type="text" id="searchPlayersInput" placeholder="Search players..." class="search-input">
+                            <select id="tierFilter" class="filter-select">
+                                <option value="">All Tiers</option>
+                                <option value="bronze">Bronze</option>
+                                <option value="silver">Silver</option>
+                                <option value="gold">Gold</option>
+                                <option value="platinum">Platinum</option>
+                                <option value="diamond">Diamond</option>
+                                <option value="vip">VIP</option>
+                                <option value="high_roller">High Roller</option>
+                            </select>
+                            <select id="statusFilterPlayers" class="filter-select">
+                                <option value="">All Statuses</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="suspended">Suspended</option>
+                                <option value="vip">VIP</option>
+                            </select>
+                        </div>
+                        
+                        <div id="playersList" class="data-list">
+                            <!-- Player entries will be dynamically added here -->
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <!-- Reports Tab -->
+            <div id="reports-tab" class="tab-content">
+                <div class="reports-layout">
+                    <!-- Report Controls -->
+                    <section class="reports-controls">
+                        <h2><i class="fas fa-chart-bar"></i> Generate Reports</h2>
+                        
+                        <div class="report-filters">
+                            <div class="form-group">
+                                <label for="reportType">Report Type</label>
+                                <select id="reportType" name="reportType">
+                                    <option value="overall">Overall Summary</option>
+                                    <option value="leads">Leads Report</option>
+                                    <option value="players">Players Report</option>
+                                    <option value="conversions">Lead to Player Conversions</option>
+                                    <option value="bonuses">Bonus Analysis</option>
+                                    <option value="custom">Custom Filtered Report</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="dateRange">Date Range</label>
+                                <select id="dateRange" name="dateRange">
+                                    <option value="all">All Time</option>
+                                    <option value="last7days">Last 7 Days</option>
+                                    <option value="last30days">Last 30 Days</option>
+                                    <option value="last90days">Last 90 Days</option>
+                                    <option value="custom">Custom Range</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group" id="customDateRange" style="display: none;">
+                                <label for="startDate">Start Date</label>
+                                <input type="date" id="startDate" name="startDate">
+                                <label for="endDate">End Date</label>
+                                <input type="date" id="endDate" name="endDate">
+                            </div>
+                            
+                            <div class="form-group" id="customFilters" style="display: none;">
+                                <label for="filterField">Filter By</label>
+                                <select id="filterField" name="filterField">
+                                    <option value="source">Lead Source</option>
+                                    <option value="status">Status</option>
+                                    <option value="tier">Player Tier</option>
+                                    <option value="contactMethod">Contact Method</option>
+                                </select>
+                                <label for="filterValue">Filter Value</label>
+                                <input type="text" id="filterValue" name="filterValue" placeholder="Enter filter value">
+                            </div>
+                            
+                            <button id="generateReportBtn" class="btn btn-primary">
+                                <i class="fas fa-chart-line"></i> Generate Report
+                            </button>
+                            
+                            <button id="exportReportBtn" class="btn btn-secondary" style="display: none;">
+                                <i class="fas fa-download"></i> Export Report CSV
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Report Results -->
+                    <section class="report-results">
+                        <div id="reportContent" class="report-content">
+                            <div class="empty-state">
+                                <i class="fas fa-chart-bar"></i>
+                                <h3>No Report Generated</h3>
+                                <p>Select report type and click "Generate Report" to view analytics</p>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Lead Modal -->
+    <div id="editLeadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Lead</h3>
+                <span class="close">&times;</span>
+            </div>
+            <form id="editLeadForm" class="data-form">
+                <input type="hidden" id="editLeadId">
+                <div class="form-group">
+                    <label for="editLeadName">Lead Name *</label>
+                    <input type="text" id="editLeadName" name="leadName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLeadEmail">Email</label>
+                    <input type="email" id="editLeadEmail" name="leadEmail">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLeadPhone">Phone</label>
+                    <input type="tel" id="editLeadPhone" name="leadPhone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLeadSource">Lead Source *</label>
+                    <select id="editLeadSource" name="leadSource" required>
+                        <option value="">Select source</option>
+                        <option value="social_media">Social Media</option>
+                        <option value="referral">Referral</option>
+                        <option value="website">Website</option>
+                        <option value="advertisement">Advertisement</option>
+                        <option value="telegram">Telegram</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editContactMethod">How They Reached Out *</label>
+                    <select id="editContactMethod" name="contactMethod" required>
+                        <option value="">Select method</option>
+                        <option value="telegram">Telegram</option>
+                        <option value="email">Email</option>
+                        <option value="phone">Phone</option>
+                        <option value="website_form">Website Form</option>
+                        <option value="social_dm">Social Media DM</option>
+                        <option value="live_chat">Live Chat</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editContactDate">Contact Date *</label>
+                    <input type="date" id="editContactDate" name="contactDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editTelegramUsername">Telegram Username</label>
+                    <input type="text" id="editTelegramUsername" name="telegramUsername" placeholder="@username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editGamblingRanking">Ranking on Other Gambling Sites</label>
+                    <select id="editGamblingRanking" name="gamblingRanking">
+                        <option value="">Select ranking</option>
+                        <option value="bronze">Bronze</option>
+                        <option value="silver">Silver</option>
+                        <option value="gold">Gold</option>
+                        <option value="platinum">Platinum</option>
+                        <option value="diamond">Diamond</option>
+                        <option value="vip">VIP</option>
+                        <option value="high_roller">High Roller</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLeadPersonality">Personality & Interests</label>
+                    <textarea id="editLeadPersonality" name="leadPersonality" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLeadFavoriteGames">Favorite Games</label>
+                    <textarea id="editLeadFavoriteGames" name="leadFavoriteGames" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLeadNotes">General Notes</label>
+                    <textarea id="editLeadNotes" name="leadNotes" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLeadStatus">Status</label>
+                    <select id="editLeadStatus" name="leadStatus">
+                        <option value="new">New</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="qualified">Qualified</option>
+                        <option value="converted">Converted to Player</option>
+                        <option value="lost">Lost</option>
+                    </select>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Player Modal -->
+    <div id="editPlayerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Edit Player</h3>
+                <span class="close">&times;</span>
+            </div>
+            <form id="editPlayerForm" class="data-form">
+                <input type="hidden" id="editPlayerId">
+                <div class="form-group">
+                    <label for="editPlayerName">Player Name *</label>
+                    <input type="text" id="editPlayerName" name="playerName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerEmail">Email</label>
+                    <input type="email" id="editPlayerEmail" name="playerEmail">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerPhone">Phone</label>
+                    <input type="tel" id="editPlayerPhone" name="playerPhone">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerId">Player ID *</label>
+                    <input type="text" id="editPlayerId" name="playerId" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editRegistrationDate">Registration Date *</label>
+                    <input type="date" id="editRegistrationDate" name="registrationDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerTier">Player Tier</label>
+                    <select id="editPlayerTier" name="playerTier">
+                        <option value="bronze">Bronze</option>
+                        <option value="silver">Silver</option>
+                        <option value="gold">Gold</option>
+                        <option value="platinum">Platinum</option>
+                        <option value="diamond">Diamond</option>
+                        <option value="vip">VIP</option>
+                        <option value="high_roller">High Roller</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editTotalDeposits">Total Deposits ($)</label>
+                    <input type="number" id="editTotalDeposits" name="totalDeposits" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editTotalWithdrawals">Total Withdrawals ($)</label>
+                    <input type="number" id="editTotalWithdrawals" name="totalWithdrawals" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editLastActivity">Last Activity Date</label>
+                    <input type="date" id="editLastActivity" name="lastActivity">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerTelegramUsername">Telegram Username</label>
+                    <input type="text" id="editPlayerTelegramUsername" name="telegramUsername" placeholder="@username">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerPersonality">Personality & Interests</label>
+                    <textarea id="editPlayerPersonality" name="playerPersonality" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerFavoriteGames">Favorite Games</label>
+                    <textarea id="editPlayerFavoriteGames" name="playerFavoriteGames" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerNotes">Important Information</label>
+                    <textarea id="editPlayerNotes" name="playerNotes" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editPlayerStatus">Status</label>
+                    <select id="editPlayerStatus" name="playerStatus">
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="suspended">Suspended</option>
+                        <option value="vip">VIP</option>
+                    </select>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Save Changes
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Bonus Modal -->
+    <div id="addBonusModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-gift"></i> Add Bonus</h3>
+                <span class="close">&times;</span>
+            </div>
+            <form id="addBonusForm" class="data-form">
+                <input type="hidden" id="bonusPlayerId">
+                <div class="form-group">
+                    <label for="bonusType">Bonus Type *</label>
+                    <select id="bonusType" name="bonusType" required>
+                        <option value="">Select bonus type</option>
+                        <option value="welcome">Welcome Bonus</option>
+                        <option value="deposit">Deposit Bonus</option>
+                        <option value="reload">Reload Bonus</option>
+                        <option value="cashback">Cashback</option>
+                        <option value="free_spins">Free Spins</option>
+                        <option value="tournament">Tournament Prize</option>
+                        <option value="loyalty">Loyalty Reward</option>
+                        <option value="special">Special Offer</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bonusAmount">Bonus Amount ($)</label>
+                    <input type="number" id="bonusAmount" name="bonusAmount" step="0.01" min="0">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bonusPercentage">Bonus Percentage (%)</label>
+                    <input type="number" id="bonusPercentage" name="bonusPercentage" step="0.01" min="0" max="1000">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bonusDate">Bonus Date *</label>
+                    <input type="date" id="bonusDate" name="bonusDate" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bonusWagering">Wagering Requirements</label>
+                    <input type="number" id="bonusWagering" name="bonusWagering" step="0.01" min="0" placeholder="e.g., 35x">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bonusExpiry">Expiry Date</label>
+                    <input type="date" id="bonusExpiry" name="bonusExpiry">
+                </div>
+                
+                <div class="form-group">
+                    <label for="bonusNotes">Notes</label>
+                    <textarea id="bonusNotes" name="bonusNotes" rows="3" placeholder="Additional notes about the bonus..."></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Add Bonus
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

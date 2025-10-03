@@ -11,8 +11,8 @@ const CONFIG = {
     sessionTimeout: 30 * 60 * 1000, // 30 minutes
     encryptionKey: 'MonkeyTiltVIP2024SecretKey!',
     maxFailedAttempts: 3,
-    // Password API URL - will be set to your Render deployment
-    passwordApiUrl: 'https://your-password-api.onrender.com'
+    // Password will be set via environment variable in Render
+    systemPassword: 'MonkeyTilt2024!' // This will be overridden by Render env var
 };
 
 // Advanced ban system - survives cookie clearing
@@ -193,69 +193,38 @@ function saveSecureData() {
     }
 }
 
-// Enhanced password authentication with ban system
-async function authenticateUser(password) {
+// Simple password authentication with ban system
+function authenticateUser(password) {
     // Check if device is already banned
     if (isDeviceBanned() || isBanned) {
         showBanMessage();
         return false;
     }
     
-    try {
-        const response = await fetch(`${CONFIG.passwordApiUrl}/verify-password`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ password })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            // Reset failed attempts on successful login
-            failedAttempts = 0;
-            isAuthenticated = true;
-            sessionStorage.setItem('vipSession', JSON.stringify({
-                timestamp: Date.now(),
-                sessionId: Math.random().toString(36).substring(2, 15)
-            }));
-            return true;
-        } else {
-            // Increment failed attempts
-            failedAttempts++;
-            
-            // Check if max attempts reached
-            if (failedAttempts >= CONFIG.maxFailedAttempts) {
-                banDevice();
-                return false;
-            }
-            
-            // Add delay to prevent brute force
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            return false;
-        }
-    } catch (error) {
-        console.error('Authentication error:', error);
-        
-        // Fallback: allow access if API is down (for development)
-        // Note: This fallback should be removed in production
-        if (password === 'MonkeyTilt2024!') {
-            failedAttempts = 0;
-            isAuthenticated = true;
-            sessionStorage.setItem('vipSession', JSON.stringify({
-                timestamp: Date.now(),
-                sessionId: Math.random().toString(36).substring(2, 15)
-            }));
-            return true;
-        }
-        
-        // Increment failed attempts even on API error
+    // Get password from environment variable (injected by Render)
+    const correctPassword = window.SYSTEM_PASSWORD || CONFIG.systemPassword;
+    
+    if (password === correctPassword) {
+        // Reset failed attempts on successful login
+        failedAttempts = 0;
+        isAuthenticated = true;
+        sessionStorage.setItem('vipSession', JSON.stringify({
+            timestamp: Date.now(),
+            sessionId: Math.random().toString(36).substring(2, 15)
+        }));
+        return true;
+    } else {
+        // Increment failed attempts
         failedAttempts++;
+        
+        // Check if max attempts reached
         if (failedAttempts >= CONFIG.maxFailedAttempts) {
             banDevice();
+            return false;
         }
         
+        // Add delay to prevent brute force
+        setTimeout(() => {}, 2000);
         return false;
     }
 }
@@ -535,6 +504,8 @@ function handleLeadSubmit(e) {
         name: name,
         email: formData.get('leadEmail')?.trim() || '',
         phone: formData.get('leadPhone')?.trim() || '',
+        username: formData.get('leadUsername')?.trim() || '',
+        telegramHandle: formData.get('leadTelegramHandle')?.trim() || '',
         source: source,
         contactMethod: contactMethod,
         contactDate: contactDate,
@@ -543,6 +514,12 @@ function handleLeadSubmit(e) {
         personality: formData.get('leadPersonality')?.trim() || '',
         favoriteGames: formData.get('leadFavoriteGames')?.trim() || '',
         notes: formData.get('leadNotes')?.trim() || '',
+        newLossback: formData.get('leadNewLossback')?.trim() || '',
+        legacyLossback: formData.get('leadLegacyLossback')?.trim() || '',
+        alternateBonusing: formData.get('leadAlternateBonusing')?.trim() || '',
+        sportsbookHosted: formData.get('leadSportsbookHosted')?.trim() || '',
+        host: formData.get('leadHost')?.trim() || '',
+        backupHosts: formData.get('leadBackupHosts')?.trim() || '',
         status: formData.get('leadStatus') || 'new',
         createdAt: new Date().toISOString()
     };
@@ -573,6 +550,8 @@ function handlePlayerSubmit(e) {
         name: name,
         email: formData.get('playerEmail')?.trim() || '',
         phone: formData.get('playerPhone')?.trim() || '',
+        username: formData.get('playerUsername')?.trim() || '',
+        telegramHandle: formData.get('playerTelegramHandle')?.trim() || '',
         playerId: playerId,
         registrationDate: registrationDate,
         tier: formData.get('playerTier') || 'bronze',
@@ -583,6 +562,12 @@ function handlePlayerSubmit(e) {
         personality: formData.get('playerPersonality')?.trim() || '',
         favoriteGames: formData.get('playerFavoriteGames')?.trim() || '',
         notes: formData.get('playerNotes')?.trim() || '',
+        newLossback: formData.get('playerNewLossback')?.trim() || '',
+        legacyLossback: formData.get('playerLegacyLossback')?.trim() || '',
+        alternateBonusing: formData.get('playerAlternateBonusing')?.trim() || '',
+        sportsbookHosted: formData.get('playerSportsbookHosted')?.trim() || '',
+        host: formData.get('playerHost')?.trim() || '',
+        backupHosts: formData.get('playerBackupHosts')?.trim() || '',
         status: formData.get('playerStatus') || 'active',
         createdAt: new Date().toISOString()
     };
@@ -672,9 +657,33 @@ function renderLeads() {
                     <span class="vip-detail-value">${formatValue(lead.gamblingRanking)}</span>
                 </div>
             </div>
-            ${lead.personality ? `<div class="vip-feedback"><div class="vip-feedback-label">Personality & Interests</div><div class="vip-feedback-text">${lead.personality}</div></div>` : ''}
-            ${lead.favoriteGames ? `<div class="vip-feedback"><div class="vip-feedback-label">Favorite Games</div><div class="vip-feedback-text">${lead.favoriteGames}</div></div>` : ''}
-            ${lead.notes ? `<div class="vip-feedback"><div class="vip-feedback-label">General Notes</div><div class="vip-feedback-text">${lead.notes}</div></div>` : ''}
+            <div class="vip-feedback">
+                <div class="vip-feedback-label">
+                    Personality & Interests
+                    <button class="btn-inline-edit" onclick="quickEditLead('${lead.id}', 'personality', '${lead.personality || ''}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div class="vip-feedback-text" id="lead-personality-${lead.id}">${lead.personality || 'Click edit to add'}</div>
+            </div>
+            <div class="vip-feedback">
+                <div class="vip-feedback-label">
+                    Favorite Games
+                    <button class="btn-inline-edit" onclick="quickEditLead('${lead.id}', 'favoriteGames', '${lead.favoriteGames || ''}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div class="vip-feedback-text" id="lead-favoriteGames-${lead.id}">${lead.favoriteGames || 'Click edit to add'}</div>
+            </div>
+            <div class="vip-feedback">
+                <div class="vip-feedback-label">
+                    General Notes
+                    <button class="btn-inline-edit" onclick="quickEditLead('${lead.id}', 'notes', '${lead.notes || ''}')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </div>
+                <div class="vip-feedback-text" id="lead-notes-${lead.id}">${lead.notes || 'Click edit to add'}</div>
+            </div>
         </div>
     `).join('');
 }
@@ -733,9 +742,33 @@ function renderPlayers() {
                         <span class="vip-detail-value">${formatDate(player.lastActivity)}</span>
                     </div>
                 </div>
-                ${player.personality ? `<div class="vip-feedback"><div class="vip-feedback-label">Personality & Interests</div><div class="vip-feedback-text">${player.personality}</div></div>` : ''}
-                ${player.favoriteGames ? `<div class="vip-feedback"><div class="vip-feedback-label">Favorite Games</div><div class="vip-feedback-text">${player.favoriteGames}</div></div>` : ''}
-                ${player.notes ? `<div class="vip-feedback"><div class="vip-feedback-label">Important Information</div><div class="vip-feedback-text">${player.notes}</div></div>` : ''}
+                <div class="vip-feedback">
+                    <div class="vip-feedback-label">
+                        Personality & Interests
+                        <button class="btn-inline-edit" onclick="quickEdit('${player.id}', 'personality', '${player.personality || ''}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                    <div class="vip-feedback-text" id="personality-${player.id}">${player.personality || 'Click edit to add'}</div>
+                </div>
+                <div class="vip-feedback">
+                    <div class="vip-feedback-label">
+                        Favorite Games
+                        <button class="btn-inline-edit" onclick="quickEdit('${player.id}', 'favoriteGames', '${player.favoriteGames || ''}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                    <div class="vip-feedback-text" id="favoriteGames-${player.id}">${player.favoriteGames || 'Click edit to add'}</div>
+                </div>
+                <div class="vip-feedback">
+                    <div class="vip-feedback-label">
+                        Important Information
+                        <button class="btn-inline-edit" onclick="quickEdit('${player.id}', 'notes', '${player.notes || ''}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                    <div class="vip-feedback-text" id="notes-${player.id}">${player.notes || 'Click edit to add'}</div>
+                </div>
                 ${playerBonuses.length > 0 ? `
                     <div class="bonus-section">
                         <div class="bonus-header">
@@ -887,6 +920,97 @@ function deletePlayer(id) {
         renderPlayers();
         showMessage('Player deleted successfully!', 'success');
     }
+}
+
+// Quick Edit Functions
+function quickEdit(playerId, field, currentValue) {
+    const element = document.getElementById(`${field}-${playerId}`);
+    const currentText = currentValue || '';
+    
+    // Create input field
+    const input = document.createElement('textarea');
+    input.value = currentText;
+    input.className = 'quick-edit-input';
+    input.rows = 2;
+    input.placeholder = `Enter ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}...`;
+    
+    // Replace text with input
+    element.innerHTML = '';
+    element.appendChild(input);
+    input.focus();
+    input.select();
+    
+    // Handle save on Enter or blur
+    const saveEdit = () => {
+        const newValue = input.value.trim();
+        const player = players.find(p => p.id === playerId);
+        if (player) {
+            player[field] = newValue;
+            saveData();
+            renderPlayers();
+            showMessage(`${field.replace(/([A-Z])/g, ' $1')} updated successfully!`, 'success');
+        }
+    };
+    
+    const cancelEdit = () => {
+        renderPlayers();
+    };
+    
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveEdit();
+        } else if (e.key === 'Escape') {
+            cancelEdit();
+        }
+    });
+    
+    input.addEventListener('blur', saveEdit);
+}
+
+function quickEditLead(leadId, field, currentValue) {
+    const element = document.getElementById(`lead-${field}-${leadId}`);
+    const currentText = currentValue || '';
+    
+    // Create input field
+    const input = document.createElement('textarea');
+    input.value = currentText;
+    input.className = 'quick-edit-input';
+    input.rows = 2;
+    input.placeholder = `Enter ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}...`;
+    
+    // Replace text with input
+    element.innerHTML = '';
+    element.appendChild(input);
+    input.focus();
+    input.select();
+    
+    // Handle save on Enter or blur
+    const saveEdit = () => {
+        const newValue = input.value.trim();
+        const lead = leads.find(l => l.id === leadId);
+        if (lead) {
+            lead[field] = newValue;
+            saveData();
+            renderLeads();
+            showMessage(`${field.replace(/([A-Z])/g, ' $1')} updated successfully!`, 'success');
+        }
+    };
+    
+    const cancelEdit = () => {
+        renderLeads();
+    };
+    
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            saveEdit();
+        } else if (e.key === 'Escape') {
+            cancelEdit();
+        }
+    });
+    
+    input.addEventListener('blur', saveEdit);
 }
 
 // Filter Functions

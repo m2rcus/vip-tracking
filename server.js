@@ -3,6 +3,44 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
+// Simple file-based database
+const DATA_FILE = path.join(__dirname, 'data.json');
+
+// Initialize database
+function initDatabase() {
+    if (!fs.existsSync(DATA_FILE)) {
+        const initialData = {
+            leads: [],
+            players: [],
+            lastUpdated: Date.now()
+        };
+        fs.writeFileSync(DATA_FILE, JSON.stringify(initialData, null, 2));
+    }
+}
+
+// Read data from file
+function readData() {
+    try {
+        const data = fs.readFileSync(DATA_FILE, 'utf8');
+        return JSON.parse(data);
+    } catch (error) {
+        console.error('Error reading data:', error);
+        return { leads: [], players: [], lastUpdated: Date.now() };
+    }
+}
+
+// Write data to file
+function writeData(data) {
+    try {
+        data.lastUpdated = Date.now();
+        fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+        return true;
+    } catch (error) {
+        console.error('Error writing data:', error);
+        return false;
+    }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -13,6 +51,9 @@ app.use((req, res, next) => {
     res.setHeader('X-XSS-Protection', '1; mode=block');
     next();
 });
+
+// Middleware for parsing JSON
+app.use(express.json());
 
 // Serve static files
 app.use(express.static('.'));
@@ -202,7 +243,126 @@ app.get('/manual-reset', (req, res) => {
     `);
 });
 
+// API Endpoints for shared data
+// Get all data
+app.get('/api/data', (req, res) => {
+    const data = readData();
+    res.json(data);
+});
+
+// Save all data
+app.post('/api/data', (req, res) => {
+    const { leads, players } = req.body;
+    const data = { leads, players, lastUpdated: Date.now() };
+    
+    if (writeData(data)) {
+        res.json({ success: true, message: 'Data saved successfully' });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to save data' });
+    }
+});
+
+// Add new lead
+app.post('/api/leads', (req, res) => {
+    const data = readData();
+    const newLead = {
+        ...req.body,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+    };
+    
+    data.leads.push(newLead);
+    
+    if (writeData(data)) {
+        res.json({ success: true, lead: newLead });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to save lead' });
+    }
+});
+
+// Add new player
+app.post('/api/players', (req, res) => {
+    const data = readData();
+    const newPlayer = {
+        ...req.body,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+    };
+    
+    data.players.push(newPlayer);
+    
+    if (writeData(data)) {
+        res.json({ success: true, player: newPlayer });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to save player' });
+    }
+});
+
+// Update lead
+app.put('/api/leads/:id', (req, res) => {
+    const data = readData();
+    const leadIndex = data.leads.findIndex(lead => lead.id === req.params.id);
+    
+    if (leadIndex !== -1) {
+        data.leads[leadIndex] = { ...data.leads[leadIndex], ...req.body };
+        
+        if (writeData(data)) {
+            res.json({ success: true, lead: data.leads[leadIndex] });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to update lead' });
+        }
+    } else {
+        res.status(404).json({ success: false, message: 'Lead not found' });
+    }
+});
+
+// Update player
+app.put('/api/players/:id', (req, res) => {
+    const data = readData();
+    const playerIndex = data.players.findIndex(player => player.id === req.params.id);
+    
+    if (playerIndex !== -1) {
+        data.players[playerIndex] = { ...data.players[playerIndex], ...req.body };
+        
+        if (writeData(data)) {
+            res.json({ success: true, player: data.players[playerIndex] });
+        } else {
+            res.status(500).json({ success: false, message: 'Failed to update player' });
+        }
+    } else {
+        res.status(404).json({ success: false, message: 'Player not found' });
+    }
+});
+
+// Delete lead
+app.delete('/api/leads/:id', (req, res) => {
+    const data = readData();
+    data.leads = data.leads.filter(lead => lead.id !== req.params.id);
+    
+    if (writeData(data)) {
+        res.json({ success: true, message: 'Lead deleted successfully' });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to delete lead' });
+    }
+});
+
+// Delete player
+app.delete('/api/players/:id', (req, res) => {
+    const data = readData();
+    data.players = data.players.filter(player => player.id !== req.params.id);
+    
+    if (writeData(data)) {
+        res.json({ success: true, message: 'Player deleted successfully' });
+    } else {
+        res.status(500).json({ success: false, message: 'Failed to delete player' });
+    }
+});
+
 app.listen(PORT, () => {
+    // Initialize database
+    initDatabase();
+    
     console.log(`Server running on port ${PORT}`);
     console.log(`SYSTEM_PASSWORD (first 5 chars): ${(process.env.SYSTEM_PASSWORD || 'MonkeyTilt2024!').substring(0, 5)}*****`);
+    console.log(`Database file: ${DATA_FILE}`);
 });

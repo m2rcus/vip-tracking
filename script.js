@@ -1,6 +1,7 @@
 // Monkey Tilt VIP Management System - Single Password
 let leads = [];
 let players = [];
+let isOnline = true;
 let bonuses = [];
 let isAuthenticated = false;
 let failedAttempts = 0;
@@ -14,6 +15,75 @@ const CONFIG = {
     // Password will be set via environment variable in Render
     systemPassword: 'MonkeyTilt2024!' // This will be overridden by Render env var
 };
+
+// Server sync functions
+async function loadDataFromServer() {
+    try {
+        const response = await fetch('/api/data');
+        if (response.ok) {
+            const data = await response.json();
+            leads = data.leads || [];
+            players = data.players || [];
+            isOnline = true;
+            console.log('Data loaded from server');
+        } else {
+            throw new Error('Failed to load data from server');
+        }
+    } catch (error) {
+        console.log('Server unavailable, using local storage');
+        isOnline = false;
+        loadDataFromLocal();
+    }
+}
+
+async function saveDataToServer() {
+    if (!isOnline) return;
+    
+    try {
+        const response = await fetch('/api/data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ leads, players })
+        });
+        
+        if (response.ok) {
+            console.log('Data saved to server');
+        } else {
+            throw new Error('Failed to save to server');
+        }
+    } catch (error) {
+        console.log('Server save failed, saving locally');
+        saveDataToLocal();
+    }
+}
+
+// Fallback to local storage
+function loadDataFromLocal() {
+    try {
+        const encryptedLeads = localStorage.getItem('vipLeads');
+        const encryptedPlayers = localStorage.getItem('vipPlayers');
+        
+        if (encryptedLeads) {
+            leads = JSON.parse(decryptData(encryptedLeads));
+        }
+        if (encryptedPlayers) {
+            players = JSON.parse(decryptData(encryptedPlayers));
+        }
+    } catch (error) {
+        console.error('Error loading local data:', error);
+    }
+}
+
+function saveDataToLocal() {
+    try {
+        localStorage.setItem('vipLeads', encryptData(JSON.stringify(leads)));
+        localStorage.setItem('vipPlayers', encryptData(JSON.stringify(players)));
+    } catch (error) {
+        console.error('Error saving local data:', error);
+    }
+}
 
 // Basic anti-debugging measures
 function setupAntiDebugging() {
@@ -463,12 +533,19 @@ function setupSecurityEventListeners() {
     resetInactivityTimer();
 }
 
-function initializeApp() {
+async function initializeApp() {
+    // Load data from server first, fallback to local
+    await loadDataFromServer();
+    
     // Set today's date as default for date inputs
     const today = new Date().toISOString().split('T')[0];
     document.getElementById('contactDate').value = today;
     document.getElementById('registrationDate').value = today;
     document.getElementById('bonusDate').value = today;
+    
+    // Render the data
+    renderLeads();
+    renderPlayers();
 }
 
 function setupEventListeners() {
@@ -526,7 +603,7 @@ function switchTab(tabName) {
 }
 
 // Lead Management
-function handleLeadSubmit(e) {
+async function handleLeadSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     
@@ -567,13 +644,13 @@ function handleLeadSubmit(e) {
     };
     
     leads.push(lead);
-    saveData();
+    await saveDataToServer();
     renderLeads();
     e.target.reset();
     showMessage('🎉 Lead added successfully!', 'success');
 }
 
-function handlePlayerSubmit(e) {
+async function handlePlayerSubmit(e) {
     e.preventDefault();
     const formData = new FormData(e.target);
     
@@ -615,7 +692,7 @@ function handlePlayerSubmit(e) {
     };
     
     players.push(player);
-    saveData();
+    await saveDataToServer();
     renderPlayers();
     e.target.reset();
     showMessage('🎉 Player added successfully!', 'success');

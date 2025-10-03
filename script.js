@@ -1,14 +1,456 @@
-// Global data storage
-let leads = JSON.parse(localStorage.getItem('leads')) || [];
-let players = JSON.parse(localStorage.getItem('players')) || [];
-let bonuses = JSON.parse(localStorage.getItem('bonuses')) || [];
+// Monkey Tilt VIP Management System - Single Password
+let leads = [];
+let players = [];
+let bonuses = [];
+let isAuthenticated = false;
+let failedAttempts = 0;
+let isBanned = false;
 
-// Initialize app
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
-    setupEventListeners();
+// Configuration
+const CONFIG = {
+    sessionTimeout: 30 * 60 * 1000, // 30 minutes
+    encryptionKey: 'MonkeyTiltVIP2024SecretKey!',
+    maxFailedAttempts: 3,
+    // Password API URL - will be set to your Render deployment
+    passwordApiUrl: 'https://your-password-api.onrender.com'
+};
+
+// Advanced ban system - survives cookie clearing
+function generateFingerprint() {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    ctx.textBaseline = 'top';
+    ctx.font = '14px Arial';
+    ctx.fillText('Fingerprint', 2, 2);
+    
+    const fingerprint = [
+        navigator.userAgent,
+        navigator.language,
+        screen.width + 'x' + screen.height,
+        new Date().getTimezoneOffset(),
+        canvas.toDataURL(),
+        navigator.hardwareConcurrency || 'unknown',
+        navigator.platform
+    ].join('|');
+    
+    // Create hash of fingerprint
+    let hash = 0;
+    for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash).toString(36);
+}
+
+function isDeviceBanned() {
+    const fingerprint = generateFingerprint();
+    const banKey = `ban_${fingerprint}`;
+    const banData = localStorage.getItem(banKey);
+    
+    if (banData) {
+        try {
+            const ban = JSON.parse(banData);
+            // Check if ban is still valid (permanent)
+            return ban.banned === true;
+        } catch (e) {
+            return false;
+        }
+    }
+    return false;
+}
+
+function banDevice() {
+    const fingerprint = generateFingerprint();
+    const banKey = `ban_${fingerprint}`;
+    const banData = {
+        banned: true,
+        timestamp: Date.now(),
+        attempts: failedAttempts
+    };
+    
+    // Store ban in multiple places for redundancy
+    localStorage.setItem(banKey, JSON.stringify(banData));
+    sessionStorage.setItem('banned', 'true');
+    
+    // Also store in IndexedDB for extra persistence
+    if ('indexedDB' in window) {
+        const request = indexedDB.open('BanDB', 1);
+        request.onupgradeneeded = function() {
+            const db = request.result;
+            if (!db.objectStoreNames.contains('bans')) {
+                db.createObjectStore('bans');
+            }
+        };
+        request.onsuccess = function() {
+            const db = request.result;
+            const transaction = db.transaction(['bans'], 'readwrite');
+            const store = transaction.objectStore('bans');
+            store.put(banData, fingerprint);
+        };
+    }
+    
+    isBanned = true;
+    showBanMessage();
+}
+
+function showBanMessage() {
+    document.getElementById('loginForm').style.display = 'none';
+    document.getElementById('banMessage').style.display = 'flex';
+    
+    // Disable all form interactions
+    document.body.style.pointerEvents = 'none';
+    document.body.style.userSelect = 'none';
+}
+
+// Simple encryption/decryption (for demo purposes)
+function encryptData(data) {
+    try {
+        const jsonString = JSON.stringify(data);
+        // Simple XOR encryption (not production-ready)
+        let encrypted = '';
+        for (let i = 0; i < jsonString.length; i++) {
+            encrypted += String.fromCharCode(
+                jsonString.charCodeAt(i) ^ SECURITY_CONFIG.encryptionKey.charCodeAt(i % SECURITY_CONFIG.encryptionKey.length)
+            );
+        }
+        return btoa(encrypted);
+    } catch (error) {
+        console.error('Encryption error:', error);
+        return null;
+    }
+}
+
+function decryptData(encryptedData) {
+    try {
+        const decrypted = atob(encryptedData);
+        let jsonString = '';
+        for (let i = 0; i < decrypted.length; i++) {
+            jsonString += String.fromCharCode(
+                decrypted.charCodeAt(i) ^ SECURITY_CONFIG.encryptionKey.charCodeAt(i % SECURITY_CONFIG.encryptionKey.length)
+            );
+        }
+        return JSON.parse(jsonString);
+    } catch (error) {
+        console.error('Decryption error:', error);
+        return null;
+    }
+}
+
+// Load encrypted data with additional security checks
+function loadSecureData() {
+    // Only load data if user is properly authenticated
+    if (!isAuthenticated || !currentUser) {
+        return;
+    }
+    
+    try {
+        // Use obfuscated storage keys
+        const storageKeys = ['vipLeads_encrypted', 'vipPlayers_encrypted', 'vipBonuses_encrypted'];
+        const dataArrays = [leads, players, bonuses];
+        
+        storageKeys.forEach((key, index) => {
+            const encryptedData = localStorage.getItem(key);
+            if (encryptedData) {
+                const decryptedData = decryptData(encryptedData);
+                if (decryptedData && Array.isArray(decryptedData)) {
+                    dataArrays[index] = decryptedData;
+                }
+            }
+        });
+        
+        // Update global arrays
+        leads = dataArrays[0];
+        players = dataArrays[1];
+        bonuses = dataArrays[2];
+        
+    } catch (error) {
+        // Clear data on error to prevent corruption
+        leads = [];
+        players = [];
+        bonuses = [];
+    }
+}
+
+// Save encrypted data
+function saveSecureData() {
+    try {
+        const encryptedLeads = encryptData(leads);
+        const encryptedPlayers = encryptData(players);
+        const encryptedBonuses = encryptData(bonuses);
+        
+        if (encryptedLeads) {
+            localStorage.setItem('vipLeads_encrypted', encryptedLeads);
+        }
+        if (encryptedPlayers) {
+            localStorage.setItem('vipPlayers_encrypted', encryptedPlayers);
+        }
+        if (encryptedBonuses) {
+            localStorage.setItem('vipBonuses_encrypted', encryptedBonuses);
+        }
+    } catch (error) {
+        console.error('Error saving secure data:', error);
+    }
+}
+
+// Enhanced password authentication with ban system
+async function authenticateUser(password) {
+    // Check if device is already banned
+    if (isDeviceBanned() || isBanned) {
+        showBanMessage();
+        return false;
+    }
+    
+    try {
+        const response = await fetch(`${CONFIG.passwordApiUrl}/verify-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ password })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Reset failed attempts on successful login
+            failedAttempts = 0;
+            isAuthenticated = true;
+            sessionStorage.setItem('vipSession', JSON.stringify({
+                timestamp: Date.now(),
+                sessionId: Math.random().toString(36).substring(2, 15)
+            }));
+            return true;
+        } else {
+            // Increment failed attempts
+            failedAttempts++;
+            
+            // Check if max attempts reached
+            if (failedAttempts >= CONFIG.maxFailedAttempts) {
+                banDevice();
+                return false;
+            }
+            
+            // Add delay to prevent brute force
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            return false;
+        }
+    } catch (error) {
+        console.error('Authentication error:', error);
+        
+        // Fallback: allow access if API is down (for development)
+        // Note: This fallback should be removed in production
+        if (password === 'MonkeyTilt2024!') {
+            failedAttempts = 0;
+            isAuthenticated = true;
+            sessionStorage.setItem('vipSession', JSON.stringify({
+                timestamp: Date.now(),
+                sessionId: Math.random().toString(36).substring(2, 15)
+            }));
+            return true;
+        }
+        
+        // Increment failed attempts even on API error
+        failedAttempts++;
+        if (failedAttempts >= CONFIG.maxFailedAttempts) {
+            banDevice();
+        }
+        
+        return false;
+    }
+}
+
+function checkSession() {
+    const session = sessionStorage.getItem('vipSession');
+    if (session) {
+        try {
+            const sessionData = JSON.parse(session);
+            const now = Date.now();
+            if (now - sessionData.timestamp < CONFIG.sessionTimeout) {
+                isAuthenticated = true;
+                return true;
+            } else {
+                logout();
+            }
+        } catch (error) {
+            logout();
+        }
+    }
+    return false;
+}
+
+function logout() {
+    isAuthenticated = false;
+    sessionStorage.removeItem('vipSession');
+    showLoginScreen();
+}
+
+function showLoginScreen() {
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('mainApp').style.display = 'none';
+}
+
+function showMainApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    document.getElementById('currentUser').textContent = 'Welcome to Monkey Tilt VIP System';
+    loadSecureData();
     renderAllData();
+    
+    // Additional security: Disable right-click and F12
+    setupAntiInspection();
+}
+
+// Anti-inspection measures
+function setupAntiInspection() {
+    // Disable right-click context menu
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        showSecurityWarning();
+    });
+    
+    // Disable F12, Ctrl+Shift+I, Ctrl+U
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+            (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            showSecurityWarning();
+        }
+    });
+    
+    // Clear console periodically
+    setInterval(() => {
+        if (typeof console !== 'undefined') {
+            console.clear();
+        }
+    }, 1000);
+    
+    // Detect dev tools
+    let devtools = false;
+    setInterval(() => {
+        if (window.outerHeight - window.innerHeight > 200 || 
+            window.outerWidth - window.innerWidth > 200) {
+            if (!devtools) {
+                devtools = true;
+                showSecurityWarning();
+                // Optionally logout on dev tools detection
+                // logout();
+            }
+        } else {
+            devtools = false;
+        }
+    }, 500);
+}
+
+function showSecurityWarning() {
+    const warning = document.createElement('div');
+    warning.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        color: #ff6b6b;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        font-weight: bold;
+        z-index: 99999;
+        text-align: center;
+    `;
+    warning.innerHTML = `
+        <div>
+            <h1>🚫 UNAUTHORIZED ACCESS DETECTED</h1>
+            <p>This system is protected. Please contact your administrator.</p>
+        </div>
+    `;
+    document.body.appendChild(warning);
+    
+    setTimeout(() => {
+        if (document.body.contains(warning)) {
+            document.body.removeChild(warning);
+        }
+    }, 3000);
+}
+
+function createSecurityIndicator() {
+    const indicator = document.createElement('div');
+    indicator.className = 'security-indicator encrypted';
+    indicator.textContent = 'Data Encrypted';
+    document.body.appendChild(indicator);
+}
+
+// Initialize app with security
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if device is banned first
+    if (isDeviceBanned()) {
+        showBanMessage();
+        return;
+    }
+    
+    // Check for existing session
+    if (checkSession()) {
+        showMainApp();
+        initializeApp();
+        setupEventListeners();
+    } else {
+        showLoginScreen();
+        setupSecurityEventListeners();
+    }
 });
+
+function setupSecurityEventListeners() {
+    // Login form handler
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const password = document.getElementById('password').value;
+        
+        // Show loading state
+        const submitBtn = document.querySelector('#loginForm button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+        submitBtn.disabled = true;
+        
+        const success = await authenticateUser(password);
+        
+        if (success) {
+            showMainApp();
+            initializeApp();
+            setupEventListeners();
+        } else {
+            document.getElementById('loginError').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('loginError').style.display = 'none';
+            }, 3000);
+        }
+        
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+    
+    // Logout handler
+    document.getElementById('logoutBtn').addEventListener('click', logout);
+    
+    // Auto-logout on inactivity
+    let inactivityTimer;
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+            if (isAuthenticated) {
+                logout();
+                alert('Session expired due to inactivity. Please log in again.');
+            }
+        }, CONFIG.sessionTimeout);
+    }
+    
+    document.addEventListener('mousemove', resetInactivityTimer);
+    document.addEventListener('keypress', resetInactivityTimer);
+    resetInactivityTimer();
+}
 
 function initializeApp() {
     // Set today's date as default for date inputs
@@ -959,9 +1401,8 @@ function downloadCSV(content, filename) {
 
 // Utility Functions
 function saveData() {
-    localStorage.setItem('leads', JSON.stringify(leads));
-    localStorage.setItem('players', JSON.stringify(players));
-    localStorage.setItem('bonuses', JSON.stringify(bonuses));
+    // Save to localStorage with encryption
+    saveSecureData();
 }
 
 function clearAllData(type) {

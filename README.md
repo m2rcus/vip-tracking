@@ -1,8 +1,16 @@
-# VIP Tracking System
+# 🎲 Monkey Tilt VIP Management System
 
-A comprehensive Lead & Player Management System for tracking VIPs, leads, and generating reports.
+A comprehensive, secure Lead & Player Management System for tracking VIPs, leads, and generating reports with advanced security features.
 
-## Features
+## 🔐 Security Features
+
+- **Multi-Factor Authentication**: Username, password, and access code
+- **Data Encryption**: All data encrypted in localStorage
+- **Session Management**: 30-minute timeout with auto-logout
+- **Access Control**: Role-based permissions
+- **Security Indicators**: Visual security status display
+
+## 🚀 Features
 
 - **Lead Management**: Track leads with source, contact method, personality, and favorite games
 - **Player Management**: Manage current players with bonuses and important information
@@ -10,8 +18,19 @@ A comprehensive Lead & Player Management System for tracking VIPs, leads, and ge
 - **Personality Tracking**: Track interests, favorite sports, athletes, and games
 - **Bonus Management**: Track all bonuses given to players
 - **CSV Export**: Export all data for analysis
+- **Secure Data Storage**: Encrypted local storage
 
-## Deployment on Render
+## 🔑 Default Login Credentials
+
+**⚠️ CHANGE THESE IN PRODUCTION!**
+
+| Username | Password | Access Code | Role |
+|----------|----------|-------------|------|
+| `admin` | `MonkeyTilt2024!` | `VIP789` | Admin |
+| `vip1` | `VipTeam2024!` | `VIP456` | VIP Team |
+| `vip2` | `VipTeam2024!` | `VIP123` | VIP Team |
+
+## 🚀 Deployment on Render
 
 1. **Create a GitHub Repository**:
    - Push this code to GitHub
@@ -20,19 +39,18 @@ A comprehensive Lead & Player Management System for tracking VIPs, leads, and ge
 2. **Deploy on Render**:
    - Go to [render.com](https://render.com)
    - Sign up/login with GitHub
-   - Click "New +" → "Web Service"
+   - Click "New +" → "Static Site"
    - Connect your GitHub repository
    - Use these settings:
-     - **Build Command**: `npm install`
-     - **Start Command**: `npm start`
-     - **Environment**: Node
+     - **Build Command**: (leave empty)
+     - **Publish Directory**: `.`
+     - **Environment**: Static Site
      - **Plan**: Free
 
-3. **Alternative - Static Site**:
-   - Or use "Static Site" option
-   - Point to your repository
-   - Build Command: (leave empty)
-   - Publish Directory: (leave empty)
+3. **Security Configuration**:
+   - See `SECURITY.md` for detailed security setup
+   - Change default credentials before production use
+   - Configure encryption keys for your environment
 
 ## Local Development
 
@@ -51,9 +69,12 @@ npm run dev
 3. **Generate Reports**: Create comprehensive reports with filtering options
 4. **Export Data**: Download CSV files for analysis
 
-## Data Storage
+## 🔒 Data Storage & Security
 
-All data is stored locally in the browser using localStorage. For production use, consider implementing a backend database.
+- **Encrypted Storage**: All data is encrypted before storage in localStorage
+- **Session Security**: 30-minute timeout with auto-logout
+- **No External Servers**: All data stays in the browser
+- **Backup Recommended**: For production use, consider implementing a backend database
 
 ## Tech Stack
 

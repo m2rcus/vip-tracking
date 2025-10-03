@@ -209,8 +209,18 @@ async function authenticateUser(password) {
     console.log('Debug - CONFIG.systemPassword:', CONFIG.systemPassword);
     console.log('Debug - correctPassword:', correctPassword);
     console.log('Debug - input password:', password);
+    console.log('Debug - password types:', typeof password, typeof correctPassword);
+    console.log('Debug - password lengths:', password.length, correctPassword.length);
+    console.log('Debug - passwords match:', password === correctPassword);
+    console.log('Debug - passwords equal (==):', password == correctPassword);
     
-    if (password === correctPassword) {
+    // Trim whitespace from both passwords
+    const trimmedPassword = password.trim();
+    const trimmedCorrectPassword = correctPassword.trim();
+    
+    console.log('Debug - trimmed passwords match:', trimmedPassword === trimmedCorrectPassword);
+    
+    if (trimmedPassword === trimmedCorrectPassword) {
         // Reset failed attempts on successful login
         failedAttempts = 0;
         isAuthenticated = true;

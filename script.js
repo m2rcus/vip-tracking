@@ -15,33 +15,32 @@ const CONFIG = {
     systemPassword: 'MonkeyTilt2024!' // This will be overridden by Render env var
 };
 
-// Anti-debugging measures
+// Basic anti-debugging measures
 function setupAntiDebugging() {
     // Disable right-click
     document.addEventListener('contextmenu', e => e.preventDefault());
     
-    // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    // Disable F12 and common dev tools shortcuts
     document.addEventListener('keydown', e => {
         if (e.key === 'F12' || 
-            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
-            (e.ctrlKey && e.key === 'U')) {
+            (e.ctrlKey && e.shiftKey && e.key === 'I')) {
             e.preventDefault();
             return false;
         }
     });
     
-    // Detect dev tools by checking window size changes
+    // Simple dev tools detection
     setInterval(() => {
         if (window.outerHeight - window.innerHeight > 200 || 
             window.outerWidth - window.innerWidth > 200) {
             document.body.innerHTML = '<h1>Access Denied</h1><p>Developer tools detected.</p>';
         }
-    }, 1000);
+    }, 2000);
     
-    // Clear console periodically
+    // Clear console occasionally
     setInterval(() => {
         console.clear();
-    }, 2000);
+    }, 5000);
 }
 
 // Advanced ban system - survives cookie clearing

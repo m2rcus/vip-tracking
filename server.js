@@ -6,6 +6,14 @@ const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Basic security headers
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
+
 // Serve static files
 app.use(express.static('.'));
 
@@ -18,17 +26,16 @@ app.get('/', (req, res) => {
         // Get password from environment variable
         const systemPassword = process.env.SYSTEM_PASSWORD || 'MonkeyTilt2024!';
         
-        // Obfuscate the password using simple XOR encryption
-        const obfuscatedPassword = Buffer.from(systemPassword).map((byte, index) => 
-            byte ^ (index + 42) ^ 0xAB
-        ).toString('base64');
+        // Simple but effective obfuscation
+        const obfuscatedPassword = Buffer.from(systemPassword)
+            .map((byte, index) => byte ^ (index + 42) ^ 0xAB)
+            .toString('base64');
         
-        // Inject the obfuscated password with anti-debugging
+        // Inject the obfuscated password with simple anti-debugging
         const scriptTag = `
         <script>
             (function() {
-                // Anti-debugging: Clear console and disable dev tools
-                console.clear();
+                // Simple dev tools detection
                 setInterval(() => {
                     if (window.outerHeight - window.innerHeight > 200 || 
                         window.outerWidth - window.innerWidth > 200) {
@@ -36,12 +43,17 @@ app.get('/', (req, res) => {
                     }
                 }, 1000);
                 
+                // Clear console periodically
+                setInterval(() => {
+                    console.clear();
+                }, 2000);
+                
                 // Obfuscated password storage
                 window._mt = '${obfuscatedPassword}';
                 window._key = 42;
                 window._xor = 0xAB;
                 
-                // Deobfuscation function
+                // Simple deobfuscation function
                 window._getPassword = function() {
                     try {
                         const data = atob(window._mt);

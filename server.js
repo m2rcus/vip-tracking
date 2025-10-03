@@ -55,27 +55,98 @@ app.get('/reset-ban', (req, res) => {
                 <h1>Ban Reset</h1>
                 <p>Click the button below to reset your ban status:</p>
                 <button onclick="resetBan()">Reset Ban</button>
+                <div id="status"></div>
                 <script>
                     function resetBan() {
-                        // Clear all ban data
-                        localStorage.removeItem('vipBanData');
-                        sessionStorage.removeItem('vipBanData');
-                        localStorage.removeItem('vipFailedAttempts');
-                        sessionStorage.removeItem('vipFailedAttempts');
+                        const status = document.getElementById('status');
+                        status.innerHTML = 'Resetting ban data...';
                         
-                        // Clear IndexedDB ban data
-                        if ('indexedDB' in window) {
-                            const request = indexedDB.deleteDatabase('vipBanDB');
-                            request.onsuccess = () => {
-                                alert('Ban reset successfully! You can now try logging in again.');
-                                window.location.href = '/';
-                            };
-                        } else {
-                            alert('Ban reset successfully! You can now try logging in again.');
-                            window.location.href = '/';
+                        try {
+                            // Clear all possible ban data locations
+                            localStorage.clear();
+                            sessionStorage.clear();
+                            
+                            // Clear specific keys
+                            localStorage.removeItem('vipBanData');
+                            sessionStorage.removeItem('vipBanData');
+                            localStorage.removeItem('vipFailedAttempts');
+                            sessionStorage.removeItem('vipFailedAttempts');
+                            localStorage.removeItem('vipSession');
+                            sessionStorage.removeItem('vipSession');
+                            
+                            // Clear all localStorage keys that might contain ban data
+                            for (let i = localStorage.length - 1; i >= 0; i--) {
+                                const key = localStorage.key(i);
+                                if (key && (key.includes('ban') || key.includes('vip') || key.includes('failed'))) {
+                                    localStorage.removeItem(key);
+                                }
+                            }
+                            
+                            // Clear all sessionStorage keys that might contain ban data
+                            for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                                const key = sessionStorage.key(i);
+                                if (key && (key.includes('ban') || key.includes('vip') || key.includes('failed'))) {
+                                    sessionStorage.removeItem(key);
+                                }
+                            }
+                            
+                            // Clear IndexedDB ban data
+                            if ('indexedDB' in window) {
+                                const request = indexedDB.deleteDatabase('vipBanDB');
+                                request.onsuccess = () => {
+                                    status.innerHTML = 'Ban reset successfully! Redirecting...';
+                                    setTimeout(() => {
+                                        window.location.href = '/';
+                                    }, 2000);
+                                };
+                                request.onerror = () => {
+                                    status.innerHTML = 'Ban reset completed (IndexedDB clear failed, but other data cleared). Redirecting...';
+                                    setTimeout(() => {
+                                        window.location.href = '/';
+                                    }, 2000);
+                                };
+                            } else {
+                                status.innerHTML = 'Ban reset successfully! Redirecting...';
+                                setTimeout(() => {
+                                    window.location.href = '/';
+                                }, 2000);
+                            }
+                        } catch (error) {
+                            status.innerHTML = 'Error: ' + error.message + '. Try manually clearing browser data.';
                         }
                     }
                 </script>
+            </body>
+        </html>
+    `);
+});
+
+// Manual reset endpoint with instructions
+app.get('/manual-reset', (req, res) => {
+    res.send(`
+        <html>
+            <head><title>Manual Ban Reset</title></head>
+            <body>
+                <h1>Manual Ban Reset Instructions</h1>
+                <p>If the automatic reset didn't work, follow these steps:</p>
+                <ol>
+                    <li><strong>Open Developer Tools:</strong> Press F12 or right-click → Inspect</li>
+                    <li><strong>Go to Application tab</strong> (or Storage tab in Firefox)</li>
+                    <li><strong>Clear Storage:</strong>
+                        <ul>
+                            <li>Click "Clear storage" or "Clear site data"</li>
+                            <li>Or manually delete these items:
+                                <ul>
+                                    <li>Local Storage → Delete all items</li>
+                                    <li>Session Storage → Delete all items</li>
+                                    <li>IndexedDB → Delete 'vipBanDB' if it exists</li>
+                                </ul>
+                            </li>
+                        </ul>
+                    </li>
+                    <li><strong>Refresh the page</strong> and try logging in again</li>
+                </ol>
+                <p><a href="/">← Back to Login</a></p>
             </body>
         </html>
     `);

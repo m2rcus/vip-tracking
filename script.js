@@ -15,6 +15,35 @@ const CONFIG = {
     systemPassword: 'MonkeyTilt2024!' // This will be overridden by Render env var
 };
 
+// Anti-debugging measures
+function setupAntiDebugging() {
+    // Disable right-click
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    
+    // Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, Ctrl+U
+    document.addEventListener('keydown', e => {
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J')) ||
+            (e.ctrlKey && e.key === 'U')) {
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    // Detect dev tools by checking window size changes
+    setInterval(() => {
+        if (window.outerHeight - window.innerHeight > 200 || 
+            window.outerWidth - window.innerWidth > 200) {
+            document.body.innerHTML = '<h1>Access Denied</h1><p>Developer tools detected.</p>';
+        }
+    }, 1000);
+    
+    // Clear console periodically
+    setInterval(() => {
+        console.clear();
+    }, 2000);
+}
+
 // Advanced ban system - survives cookie clearing
 function generateFingerprint() {
     const canvas = document.createElement('canvas');
@@ -201,24 +230,16 @@ async function authenticateUser(password) {
         return false;
     }
     
-    // Get password from environment variable (injected by Render)
-    const correctPassword = window.SYSTEM_PASSWORD || CONFIG.systemPassword;
+    // Get password from obfuscated storage
+    const correctPassword = (window._getPassword && window._getPassword()) || CONFIG.systemPassword;
     
-    // Debug logging
-    console.log('Debug - window.SYSTEM_PASSWORD:', window.SYSTEM_PASSWORD);
-    console.log('Debug - CONFIG.systemPassword:', CONFIG.systemPassword);
-    console.log('Debug - correctPassword:', correctPassword);
-    console.log('Debug - input password:', password);
-    console.log('Debug - password types:', typeof password, typeof correctPassword);
-    console.log('Debug - password lengths:', password.length, correctPassword.length);
-    console.log('Debug - passwords match:', password === correctPassword);
-    console.log('Debug - passwords equal (==):', password == correctPassword);
+    // Debug logging (removed for security)
     
     // Trim whitespace from both passwords
     const trimmedPassword = password.trim();
     const trimmedCorrectPassword = correctPassword.trim();
     
-    console.log('Debug - trimmed passwords match:', trimmedPassword === trimmedCorrectPassword);
+    // Debug logging removed for security
     
     if (trimmedPassword === trimmedCorrectPassword) {
         // Reset failed attempts on successful login
@@ -228,7 +249,7 @@ async function authenticateUser(password) {
             timestamp: Date.now(),
             sessionId: Math.random().toString(36).substring(2, 15)
         }));
-        console.log('Authentication successful!');
+        // Authentication successful
         return true;
     } else {
         // Increment failed attempts
@@ -236,12 +257,12 @@ async function authenticateUser(password) {
         
         // Check if max attempts reached
         if (failedAttempts >= CONFIG.maxFailedAttempts) {
-            console.log('Max failed attempts reached, banning device');
+            // Max failed attempts reached, banning device
             banDevice();
             return false;
         }
         
-        console.log(`Authentication failed. Attempt ${failedAttempts}/${CONFIG.maxFailedAttempts}`);
+        // Authentication failed
         // Add delay to prevent brute force
         await new Promise(resolve => setTimeout(resolve, 2000));
         return false;
@@ -373,6 +394,9 @@ function createSecurityIndicator() {
 
 // Initialize app with security
 document.addEventListener('DOMContentLoaded', function() {
+    // Setup anti-debugging measures immediately
+    setupAntiDebugging();
+    
     // Check if device is banned first
     if (isDeviceBanned()) {
         showBanMessage();

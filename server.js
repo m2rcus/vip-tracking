@@ -18,10 +18,48 @@ app.get('/', (req, res) => {
         // Get password from environment variable
         const systemPassword = process.env.SYSTEM_PASSWORD || 'MonkeyTilt2024!';
         
-        // Inject the password as a script tag
+        // Obfuscate the password using simple XOR encryption
+        const obfuscatedPassword = Buffer.from(systemPassword).map((byte, index) => 
+            byte ^ (index + 42) ^ 0xAB
+        ).toString('base64');
+        
+        // Inject the obfuscated password with anti-debugging
         const scriptTag = `
         <script>
-            window.SYSTEM_PASSWORD = '${systemPassword}';
+            (function() {
+                // Anti-debugging: Clear console and disable dev tools
+                console.clear();
+                setInterval(() => {
+                    if (window.outerHeight - window.innerHeight > 200 || 
+                        window.outerWidth - window.innerWidth > 200) {
+                        document.body.innerHTML = '<h1>Access Denied</h1><p>Developer tools detected.</p>';
+                    }
+                }, 1000);
+                
+                // Obfuscated password storage
+                window._mt = '${obfuscatedPassword}';
+                window._key = 42;
+                window._xor = 0xAB;
+                
+                // Deobfuscation function
+                window._getPassword = function() {
+                    try {
+                        const data = atob(window._mt);
+                        return data.split('').map((char, index) => 
+                            String.fromCharCode(char.charCodeAt(0) ^ (index + window._key) ^ window._xor)
+                        ).join('');
+                    } catch(e) {
+                        return null;
+                    }
+                };
+                
+                // Clear obfuscation variables after use
+                setTimeout(() => {
+                    delete window._mt;
+                    delete window._key;
+                    delete window._xor;
+                }, 5000);
+            })();
         </script>`;
         
         // Insert the script tag before the closing head tag
